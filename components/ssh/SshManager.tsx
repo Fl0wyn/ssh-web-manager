@@ -11,8 +11,8 @@ import { useHistory } from "@/lib/use-history";
 import { useTheme } from "@/lib/use-theme";
 import type { HostEntry } from "@/types/ssh";
 
-const TerminalTabs = dynamic(
-  () => import("@/components/ssh/TerminalTabs").then((m) => m.TerminalTabs),
+const SessionTabs = dynamic(
+  () => import("@/components/ssh/SessionTabs").then((m) => m.SessionTabs),
   { ssr: false }
 );
 
@@ -26,6 +26,7 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
   const [hosts, setHosts] = useState(initialHosts);
   const [openSignal, setOpenSignal] = useState<{
     hostAlias: string;
+    kind: "terminal" | "explorer";
     token: number;
   } | null>(null);
   const [configEditorOpen, setConfigEditorOpen] = useState(false);
@@ -38,8 +39,15 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
   function handleOpenSession(hostAlias: string) {
     tokenRef.current += 1;
     const token = tokenRef.current;
-    setOpenSignal({ hostAlias, token });
+    setOpenSignal({ hostAlias, kind: "terminal", token });
     historyIdsRef.current.set(token, recordConnectionStart(hostAlias, "terminal"));
+  }
+
+  function handleOpenExplorer(hostAlias: string) {
+    tokenRef.current += 1;
+    const token = tokenRef.current;
+    setOpenSignal({ hostAlias, kind: "explorer", token });
+    historyIdsRef.current.set(token, recordConnectionStart(hostAlias, "explorer"));
   }
 
   function handleOpenExternalSession(hostAlias: string) {
@@ -110,9 +118,10 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
           hosts={hosts}
           onOpenSession={handleOpenSession}
           onOpenExternalSession={handleOpenExternalSession}
+          onOpenExplorer={handleOpenExplorer}
         />
         <div className="min-h-0 min-w-0 overflow-hidden">
-          <TerminalTabs
+          <SessionTabs
             openSignal={openSignal}
             onSessionStatusChange={handleSessionStatusChange}
           />

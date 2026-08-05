@@ -10,6 +10,7 @@ interface HostContextMenuProps {
   onToggleFavorite: () => void;
   onShowDetails: () => void;
   onOpenExternalTerminal: () => void;
+  onOpenExplorer: () => void;
   onClose: () => void;
 }
 
@@ -21,6 +22,7 @@ export function HostContextMenu({
   onToggleFavorite,
   onShowDetails,
   onOpenExternalTerminal,
+  onOpenExplorer,
   onClose,
 }: HostContextMenuProps) {
   useEffect(() => {
@@ -76,6 +78,16 @@ export function HostContextMenu({
       >
         <span className="w-4 text-center">🖥️</span>
         Ouvrir dans le terminal
+      </button>
+      <button
+        onClick={() => {
+          onOpenExplorer();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+      >
+        <span className="w-4 text-center">📁</span>
+        Explorateur de fichiers
       </button>
     </div>
   );

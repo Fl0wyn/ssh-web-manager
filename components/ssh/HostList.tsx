@@ -11,12 +11,14 @@ interface HostListProps {
   hosts: HostEntry[];
   onOpenSession: (hostAlias: string) => void;
   onOpenExternalSession?: (hostAlias: string) => void;
+  onOpenExplorer: (hostAlias: string) => void;
 }
 
 export function HostList({
   hosts,
   onOpenSession,
   onOpenExternalSession,
+  onOpenExplorer,
 }: HostListProps) {
   const [query, setQuery] = useState("");
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -151,6 +153,7 @@ export function HostList({
             })
           }
           onOpenExternalTerminal={() => handleOpenExternalTerminal(contextMenu.hostAlias)}
+          onOpenExplorer={() => onOpenExplorer(contextMenu.hostAlias)}
           onClose={() => setContextMenu(null)}
         />
       )}

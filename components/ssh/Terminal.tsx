@@ -14,7 +14,7 @@ interface TerminalProps {
   onStatusChange: (status: ConnectionStatus, errorMessage?: string) => void;
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4101";
+const WS_URL = `${process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4101"}/shell`;
 
 export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);

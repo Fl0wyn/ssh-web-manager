@@ -3,40 +3,45 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Terminal, type ConnectionStatus } from "@/components/ssh/Terminal";
+import { Explorer, type ExplorerStatus } from "@/components/ssh/Explorer";
+
+type SessionKind = "terminal" | "explorer";
+type SessionStatus = ConnectionStatus | ExplorerStatus;
 
 interface Session {
   id: string;
+  kind: SessionKind;
   hostAlias: string;
   token: number;
 }
 
-interface TerminalTabsProps {
-  openSignal: { hostAlias: string; token: number } | null;
+interface SessionTabsProps {
+  openSignal: { hostAlias: string; kind: SessionKind; token: number } | null;
   onSessionStatusChange?: (
     hostAlias: string,
     token: number,
-    status: ConnectionStatus,
+    status: SessionStatus,
     errorMessage?: string
   ) => void;
 }
 
-export function TerminalTabs({ openSignal, onSessionStatusChange }: TerminalTabsProps) {
+export function SessionTabs({ openSignal, onSessionStatusChange }: SessionTabsProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [statuses, setStatuses] = useState<Record<string, ConnectionStatus>>({});
+  const [statuses, setStatuses] = useState<Record<string, SessionStatus>>({});
   const [lastHandledToken, setLastHandledToken] = useState<number | null>(null);
 
   if (openSignal && openSignal.token !== lastHandledToken) {
-    const id = `${openSignal.hostAlias}-${openSignal.token}`;
+    const id = `${openSignal.kind}-${openSignal.hostAlias}-${openSignal.token}`;
     setLastHandledToken(openSignal.token);
     setSessions((prev) => [
       ...prev,
-      { id, hostAlias: openSignal.hostAlias, token: openSignal.token },
+      { id, kind: openSignal.kind, hostAlias: openSignal.hostAlias, token: openSignal.token },
     ]);
     setActiveId(id);
   }
 
-  function setStatus(session: Session, status: ConnectionStatus, errorMessage?: string) {
+  function setStatus(session: Session, status: SessionStatus, errorMessage?: string) {
     setStatuses((prev) => ({ ...prev, [session.id]: status }));
     onSessionStatusChange?.(session.hostAlias, session.token, status, errorMessage);
   }
@@ -94,6 +99,7 @@ export function TerminalTabs({ openSignal, onSessionStatusChange }: TerminalTabs
                   "bg-muted-foreground/30"
               )}
             />
+            <span className="shrink-0 text-xs">{session.kind === "explorer" ? "📁" : "🖥️"}</span>
             <span className="max-w-40 truncate select-none">{session.hostAlias}</span>
             <button
               onClick={(e) => {
@@ -108,16 +114,23 @@ export function TerminalTabs({ openSignal, onSessionStatusChange }: TerminalTabs
         ))}
       </div>
       <div className="relative min-h-0 flex-1 bg-[#0a0a0a] p-2">
-        {sessions.map((session) => (
-          <Terminal
-            key={session.id}
-            hostAlias={session.hostAlias}
-            active={session.id === activeId}
-            onStatusChange={(status, errorMessage) =>
-              setStatus(session, status, errorMessage)
-            }
-          />
-        ))}
+        {sessions.map((session) =>
+          session.kind === "explorer" ? (
+            <Explorer
+              key={session.id}
+              hostAlias={session.hostAlias}
+              active={session.id === activeId}
+              onStatusChange={(status, errorMessage) => setStatus(session, status, errorMessage)}
+            />
+          ) : (
+            <Terminal
+              key={session.id}
+              hostAlias={session.hostAlias}
+              active={session.id === activeId}
+              onStatusChange={(status, errorMessage) => setStatus(session, status, errorMessage)}
+            />
+          )
+        )}
       </div>
     </div>
   );

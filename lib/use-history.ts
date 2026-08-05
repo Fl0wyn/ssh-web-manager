@@ -5,7 +5,7 @@ import { useCallback, useSyncExternalStore } from "react";
 const STORAGE_KEY = "ssh-web-manager:history";
 const MAX_ENTRIES = 100;
 
-export type HistoryMethod = "terminal" | "external";
+export type HistoryMethod = "terminal" | "external" | "explorer";
 export type HistoryStatus = "connecting" | "connected" | "error" | "disconnected";
 export type HistoryKind = "connection" | "disconnection";
 
