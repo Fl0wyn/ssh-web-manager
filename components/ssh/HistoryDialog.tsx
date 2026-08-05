@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { HistoryEntry, HistoryStatus } from "@/lib/use-history";
+import { cn } from "@/lib/utils";
 
 interface HistoryDialogProps {
   open: boolean;
@@ -56,7 +56,7 @@ export function HistoryDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-      <div className="flex h-full max-h-[560px] w-full max-w-lg flex-col overflow-hidden rounded-lg border bg-card shadow-lg">
+      <div className="flex h-full max-h-140 w-full max-w-lg flex-col overflow-hidden rounded-lg border bg-card shadow-lg">
         <div className="flex h-11 shrink-0 items-center justify-between border-b px-3">
           <h2 className="text-sm font-semibold">🕘 Historique</h2>
           <div className="flex items-center gap-1">

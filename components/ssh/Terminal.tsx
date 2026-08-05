@@ -23,7 +23,9 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const promptModeRef = useRef<{ echo: boolean; buffer: string } | null>(null);
   const onStatusChangeRef = useRef(onStatusChange);
-  onStatusChangeRef.current = onStatusChange;
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
 
   useEffect(() => {
     const container = containerRef.current;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "ssh-web-manager:history";
 const MAX_ENTRIES = 100;
@@ -20,14 +20,44 @@ export interface HistoryEntry {
   errorMessage?: string;
 }
 
+const listeners = new Set<() => void>();
+let cachedRaw: string | null = null;
+let cachedSnapshot: HistoryEntry[] = [];
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function notify() {
+  for (const listener of listeners) listener();
+}
+
 function readHistory(): HistoryEntry[] {
-  if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
+}
+
+function writeHistory(entries: HistoryEntry[]) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  notify();
+}
+
+function getSnapshot(): HistoryEntry[] {
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
+    cachedSnapshot = readHistory();
+  }
+  return cachedSnapshot;
+}
+
+function getServerSnapshot(): HistoryEntry[] {
+  return [];
 }
 
 let idCounter = 0;
@@ -37,30 +67,23 @@ function nextId(): string {
 }
 
 export function useHistory() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-
-  useEffect(() => {
-    setHistory(readHistory());
-  }, []);
+  const history = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const recordConnectionStart = useCallback(
     (hostAlias: string, method: HistoryMethod): string => {
       const id = nextId();
-      setHistory((prev) => {
-        const next = [
-          {
-            id,
-            hostAlias,
-            method,
-            kind: "connection" as const,
-            status: "connecting" as const,
-            connectedAt: Date.now(),
-          },
-          ...prev,
-        ].slice(0, MAX_ENTRIES);
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        return next;
-      });
+      const next = [
+        {
+          id,
+          hostAlias,
+          method,
+          kind: "connection" as const,
+          status: "connecting" as const,
+          connectedAt: Date.now(),
+        },
+        ...readHistory(),
+      ].slice(0, MAX_ENTRIES);
+      writeHistory(next);
       return id;
     },
     []
@@ -68,41 +91,43 @@ export function useHistory() {
 
   const updateConnectionStatus = useCallback(
     (id: string, status: HistoryStatus, errorMessage?: string) => {
-      setHistory((prev) => {
-        const source = prev.find((entry) => entry.id === id);
-        if (!source) return prev;
+      const prev = readHistory();
+      const source = prev.find((entry) => entry.id === id);
+      if (!source) return;
 
-        const updatedSource = { ...source, status, errorMessage: errorMessage ?? source.errorMessage };
-        const isClosing = status === "disconnected" || status === "error";
+      const updatedSource = {
+        ...source,
+        status,
+        errorMessage: errorMessage ?? source.errorMessage,
+      };
+      const isClosing = status === "disconnected" || status === "error";
 
-        let next = prev.map((entry) => (entry.id === id ? updatedSource : entry));
+      let next = prev.map((entry) => (entry.id === id ? updatedSource : entry));
 
-        if (isClosing) {
-          next = [
-            {
-              id: nextId(),
-              hostAlias: source.hostAlias,
-              method: source.method,
-              kind: "disconnection" as const,
-              status,
-              connectedAt: Date.now(),
-              closedAt: Date.now(),
-              errorMessage,
-            },
-            ...next,
-          ].slice(0, MAX_ENTRIES);
-        }
+      if (isClosing) {
+        next = [
+          {
+            id: nextId(),
+            hostAlias: source.hostAlias,
+            method: source.method,
+            kind: "disconnection" as const,
+            status,
+            connectedAt: Date.now(),
+            closedAt: Date.now(),
+            errorMessage,
+          },
+          ...next,
+        ].slice(0, MAX_ENTRIES);
+      }
 
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        return next;
-      });
+      writeHistory(next);
     },
     []
   );
 
   const clearHistory = useCallback(() => {
     window.localStorage.removeItem(STORAGE_KEY);
-    setHistory([]);
+    notify();
   }, []);
 
   return {

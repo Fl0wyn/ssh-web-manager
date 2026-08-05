@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Terminal, type ConnectionStatus } from "@/components/ssh/Terminal";
 
@@ -24,22 +24,22 @@ export function TerminalTabs({ openSignal, onSessionStatusChange }: TerminalTabs
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, ConnectionStatus>>({});
+  const [lastHandledToken, setLastHandledToken] = useState<number | null>(null);
 
-  function setStatus(session: Session, status: ConnectionStatus, errorMessage?: string) {
-    setStatuses((prev) => ({ ...prev, [session.id]: status }));
-    onSessionStatusChange?.(session.hostAlias, session.token, status, errorMessage);
-  }
-
-  useEffect(() => {
-    if (!openSignal) return;
+  if (openSignal && openSignal.token !== lastHandledToken) {
     const id = `${openSignal.hostAlias}-${openSignal.token}`;
+    setLastHandledToken(openSignal.token);
     setSessions((prev) => [
       ...prev,
       { id, hostAlias: openSignal.hostAlias, token: openSignal.token },
     ]);
     setActiveId(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openSignal?.token]);
+  }
+
+  function setStatus(session: Session, status: ConnectionStatus, errorMessage?: string) {
+    setStatuses((prev) => ({ ...prev, [session.id]: status }));
+    onSessionStatusChange?.(session.hostAlias, session.token, status, errorMessage);
+  }
 
   function closeSession(id: string) {
     setSessions((prev) => {

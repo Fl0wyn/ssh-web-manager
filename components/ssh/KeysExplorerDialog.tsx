@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 interface KeysExplorerDialogProps {
   open: boolean;
@@ -14,7 +14,7 @@ interface KeyEntry {
 
 export function KeysExplorerDialog({ open, onClose }: KeysExplorerDialogProps) {
   const [entries, setEntries] = useState<KeyEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [contentLoading, setContentLoading] = useState(false);
@@ -23,15 +23,30 @@ export function KeysExplorerDialog({ open, onClose }: KeysExplorerDialogProps) {
 
   useEffect(() => {
     if (!open) return;
-    setLoading(true);
-    setSelected(null);
-    setContent("");
-    setError(null);
-    fetch("/api/ssh/keys")
-      .then((res) => res.json())
-      .then((data) => setEntries(data.entries))
-      .catch(() => setError("Impossible de lister le repertoire ~/.ssh."))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setSelected(null);
+      setContent("");
+      setError(null);
+      try {
+        const res = await fetch("/api/ssh/keys");
+        const data = await res.json();
+        if (cancelled) return;
+        setEntries(data.entries);
+      } catch {
+        if (cancelled) return;
+        setError("Impossible de lister le repertoire ~/.ssh.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   function selectEntry(name: string) {
@@ -59,7 +74,7 @@ export function KeysExplorerDialog({ open, onClose }: KeysExplorerDialogProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-      <div className="flex h-full max-h-[640px] w-full max-w-3xl overflow-hidden rounded-lg border bg-card shadow-lg">
+      <div className="flex h-full max-h-160 w-full max-w-3xl overflow-hidden rounded-lg border bg-card shadow-lg">
         <div className="flex w-56 shrink-0 flex-col border-r">
           <div className="flex h-11 shrink-0 items-center justify-between border-b px-3">
             <h2 className="text-sm font-semibold">🔑 Cles SSH</h2>

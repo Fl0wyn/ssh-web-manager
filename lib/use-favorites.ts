@@ -1,11 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "ssh-web-manager:favorites";
 
+const listeners = new Set<() => void>();
+let cachedRaw: string | null = null;
+let cachedSnapshot: string[] = [];
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function notify() {
+  for (const listener of listeners) listener();
+}
+
 function readFavorites(): string[] {
-  if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -14,21 +26,29 @@ function readFavorites(): string[] {
   }
 }
 
-export function useFavorites() {
-  const [favorites, setFavorites] = useState<string[]>([]);
+function getSnapshot(): string[] {
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
+    cachedSnapshot = readFavorites();
+  }
+  return cachedSnapshot;
+}
 
-  useEffect(() => {
-    setFavorites(readFavorites());
-  }, []);
+function getServerSnapshot(): string[] {
+  return [];
+}
+
+export function useFavorites() {
+  const favorites = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const toggleFavorite = useCallback((hostAlias: string) => {
-    setFavorites((prev) => {
-      const next = prev.includes(hostAlias)
-        ? prev.filter((h) => h !== hostAlias)
-        : [...prev, hostAlias];
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    const current = readFavorites();
+    const next = current.includes(hostAlias)
+      ? current.filter((h) => h !== hostAlias)
+      : [...current, hostAlias];
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    notify();
   }, []);
 
   const isFavorite = useCallback(

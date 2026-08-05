@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 interface ConfigEditorDialogProps {
   open: boolean;
@@ -11,19 +11,34 @@ interface ConfigEditorDialogProps {
 
 export function ConfigEditorDialog({ open, onClose, onSaved }: ConfigEditorDialogProps) {
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setLoading(true);
-    setError(null);
-    fetch("/api/ssh/config")
-      .then((res) => res.json())
-      .then((data) => setContent(data.content))
-      .catch(() => setError("Impossible de charger le fichier de configuration."))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/ssh/config");
+        const data = await res.json();
+        if (cancelled) return;
+        setContent(data.content);
+      } catch {
+        if (cancelled) return;
+        setError("Impossible de charger le fichier de configuration.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   async function handleSave() {
@@ -53,7 +68,7 @@ export function ConfigEditorDialog({ open, onClose, onSaved }: ConfigEditorDialo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-      <div className="flex h-full max-h-[720px] w-full max-w-3xl flex-col rounded-lg border bg-card shadow-lg">
+      <div className="flex h-full max-h-180 w-full max-w-3xl flex-col rounded-lg border bg-card shadow-lg">
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <h2 className="text-sm font-semibold">⚙️ ~/.ssh/config</h2>
           <button

@@ -8,3 +8,5 @@ CLAUDE.md
 .env*.local
 
 package-lock.json
+package-lock.yaml
+pnpm-workspace.yaml
