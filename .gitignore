@@ -1,0 +1,10 @@
+node_modules
+.next
+tsconfig.tsbuildinfo
+CLAUDE.md
+
+.env
+.env.local
+.env*.local
+
+package-lock.json
