@@ -35,8 +35,10 @@ function getSnapshot(): string[] {
   return cachedSnapshot;
 }
 
+const EMPTY_SNAPSHOT: string[] = [];
+
 function getServerSnapshot(): string[] {
-  return [];
+  return EMPTY_SNAPSHOT;
 }
 
 export function useFavorites() {

@@ -40,12 +40,18 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
-    fitAddon.fit();
 
     termRef.current = term;
     fitRef.current = fitAddon;
 
     let cancelled = false;
+
+    const rafId = requestAnimationFrame(() => {
+      if (cancelled) return;
+      if (container.clientWidth > 0 && container.clientHeight > 0) {
+        fitAddon.fit();
+      }
+    });
     let hadFatalError = false;
     let lastErrorMessage: string | undefined;
 
@@ -136,6 +142,7 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
     });
 
     const resizeObserver = new ResizeObserver(() => {
+      if (cancelled || container.clientWidth === 0 || container.clientHeight === 0) return;
       fitAddon.fit();
       sendMessage({ type: "resize", cols: term.cols, rows: term.rows });
     });
@@ -143,6 +150,7 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
 
     return () => {
       cancelled = true;
+      cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       onData.dispose();
       ws.close();
@@ -151,10 +159,15 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
   }, [hostAlias]);
 
   useEffect(() => {
-    if (active) {
-      fitRef.current?.fit();
-      termRef.current?.focus();
-    }
+    if (!active) return;
+    const rafId = requestAnimationFrame(() => {
+      const container = containerRef.current;
+      if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+        fitRef.current?.fit();
+        termRef.current?.focus();
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [active]);
 
   return (

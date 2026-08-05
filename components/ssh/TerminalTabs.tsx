@@ -94,13 +94,13 @@ export function TerminalTabs({ openSignal, onSessionStatusChange }: TerminalTabs
                   "bg-muted-foreground/30"
               )}
             />
-            <span className="max-w-40 truncate">{session.hostAlias}</span>
+            <span className="max-w-40 truncate select-none">{session.hostAlias}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 closeSession(session.id);
               }}
-              className="rounded p-0.5 hover:bg-accent"
+              className="cursor-pointer rounded p-0.5 hover:bg-accent"
             >
               <span className="text-xs leading-none">✕</span>
             </button>

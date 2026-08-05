@@ -56,8 +56,10 @@ function getSnapshot(): HistoryEntry[] {
   return cachedSnapshot;
 }
 
+const EMPTY_SNAPSHOT: HistoryEntry[] = [];
+
 function getServerSnapshot(): HistoryEntry[] {
-  return [];
+  return EMPTY_SNAPSHOT;
 }
 
 let idCounter = 0;
