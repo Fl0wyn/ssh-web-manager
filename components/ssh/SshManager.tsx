@@ -7,6 +7,7 @@ import { ConfigEditorDialog } from "@/components/ssh/ConfigEditorDialog";
 import { KeysExplorerDialog } from "@/components/ssh/KeysExplorerDialog";
 import { HistoryDialog } from "@/components/ssh/HistoryDialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useHistory } from "@/lib/use-history";
 import { useTheme } from "@/lib/use-theme";
 import type { HostEntry } from "@/types/ssh";
@@ -32,6 +33,7 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
   const [configEditorOpen, setConfigEditorOpen] = useState(false);
   const [keysExplorerOpen, setKeysExplorerOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const { history, recordConnectionStart, updateConnectionStatus, clearHistory } =
     useHistory();
   const { theme, toggleTheme } = useTheme();
@@ -76,14 +78,25 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b bg-card px-4">
+      <header className="grid h-12 shrink-0 grid-cols-3 items-center gap-2 border-b bg-card px-4">
         <div className="flex items-center gap-2">
           <span className="text-lg leading-none text-primary">🖥️</span>
           <span className="text-sm font-semibold tracking-tight">
             SSH Web Manager
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative mx-auto w-full max-w-md">
+          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm leading-none text-muted-foreground">
+            🔍
+          </span>
+          <Input
+            placeholder="Rechercher un host..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8 pl-7 text-sm"
+          />
+        </div>
+        <div className="flex items-center justify-end gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -116,6 +129,7 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
       <div className="grid min-h-0 flex-1 grid-cols-[240px_1fr]">
         <HostList
           hosts={hosts}
+          query={query}
           onOpenSession={handleOpenSession}
           onOpenExternalSession={handleOpenExternalSession}
           onOpenExplorer={handleOpenExplorer}

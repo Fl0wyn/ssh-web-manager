@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState, type MouseEvent } from "react";
-import { Input } from "@/components/ui/input";
+import { useMemo, useState, type MouseEvent } from "react";
+import { cn } from "@/lib/utils";
 import { useFavorites } from "@/lib/use-favorites";
 import { HostContextMenu } from "@/components/ssh/HostContextMenu";
 import { HostDetailsPopover } from "@/components/ssh/HostDetailsPopover";
 import type { HostEntry } from "@/types/ssh";
 
+export type HostListMode = "terminal" | "explorer";
+
 interface HostListProps {
   hosts: HostEntry[];
+  query: string;
   onOpenSession: (hostAlias: string) => void;
   onOpenExternalSession?: (hostAlias: string) => void;
   onOpenExplorer: (hostAlias: string) => void;
@@ -16,11 +19,12 @@ interface HostListProps {
 
 export function HostList({
   hosts,
+  query,
   onOpenSession,
   onOpenExternalSession,
   onOpenExplorer,
 }: HostListProps) {
-  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<HostListMode>("terminal");
   const { isFavorite, toggleFavorite } = useFavorites();
   const [contextMenu, setContextMenu] = useState<{
     hostAlias: string;
@@ -33,25 +37,15 @@ export function HostList({
     y: number;
   } | null>(null);
 
-  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   function handleClick(hostAlias: string) {
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-      return;
-    }
-    clickTimeoutRef.current = setTimeout(() => {
-      clickTimeoutRef.current = null;
+    if (mode === "explorer") {
+      onOpenExplorer(hostAlias);
+    } else {
       onOpenSession(hostAlias);
-    }, 250);
+    }
   }
 
   function handleOpenExternalTerminal(hostAlias: string) {
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
     fetch("/api/ssh/open-terminal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -84,16 +78,29 @@ export function HostList({
 
   return (
     <div className="flex min-h-0 flex-col gap-2 border-r bg-card p-2">
-      <div className="relative shrink-0">
-        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm leading-none text-muted-foreground">
-          🔍
-        </span>
-        <Input
-          placeholder="Rechercher un host..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="h-8 pl-7 text-sm"
-        />
+      <div className="flex shrink-0 gap-1 rounded-md bg-muted p-1">
+        <button
+          onClick={() => setMode("terminal")}
+          className={cn(
+            "flex-1 rounded-sm px-2 py-1 text-xs font-medium transition-colors",
+            mode === "terminal"
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Shell
+        </button>
+        <button
+          onClick={() => setMode("explorer")}
+          className={cn(
+            "flex-1 rounded-sm px-2 py-1 text-xs font-medium transition-colors",
+            mode === "explorer"
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Explorer
+        </button>
       </div>
       <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-px">
@@ -108,11 +115,12 @@ export function HostList({
                 <div className="group flex items-center">
                   <button
                     onClick={() => handleClick(host.name)}
-                    onDoubleClick={() => handleOpenExternalTerminal(host.name)}
                     onContextMenu={(e) => handleContextMenu(e, host.name)}
                     className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    <span className="shrink-0 text-sm leading-none">🖥️</span>
+                    <span className="shrink-0 text-sm leading-none">
+                      {mode === "explorer" ? "📁" : "🖥️"}
+                    </span>
                     <span className="flex min-w-0 flex-col leading-tight">
                       <span className="truncate font-medium">{host.name}</span>
                       {host.description && (
@@ -153,7 +161,6 @@ export function HostList({
             })
           }
           onOpenExternalTerminal={() => handleOpenExternalTerminal(contextMenu.hostAlias)}
-          onOpenExplorer={() => onOpenExplorer(contextMenu.hostAlias)}
           onClose={() => setContextMenu(null)}
         />
       )}

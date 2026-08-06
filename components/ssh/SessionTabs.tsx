@@ -113,7 +113,13 @@ export function SessionTabs({ openSignal, onSessionStatusChange }: SessionTabsPr
           </div>
         ))}
       </div>
-      <div className="relative min-h-0 flex-1 bg-[#0a0a0a] p-2">
+      <div
+        className={cn(
+          "relative min-h-0 flex-1 p-2",
+          sessions.find((s) => s.id === activeId)?.kind !== "explorer" &&
+            "bg-[#0a0a0a]"
+        )}
+      >
         {sessions.map((session) =>
           session.kind === "explorer" ? (
             <Explorer
