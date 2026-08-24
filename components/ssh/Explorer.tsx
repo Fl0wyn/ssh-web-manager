@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExplorerPanel, type PanelEntry } from "@/components/ssh/ExplorerPanel";
 import { TransferQueue, type TransferItem } from "@/components/ssh/TransferQueue";
+import { useWsToken } from "@/lib/use-ws-token";
 import type {
   LocalFsEntry,
   SftpClientMessage,
@@ -43,6 +44,7 @@ function isRoot(currentPath: string): boolean {
 }
 
 export function Explorer({ hostAlias, active, onStatusChange }: ExplorerProps) {
+  const { token } = useWsToken();
   const wsRef = useRef<WebSocket | null>(null);
   const onStatusChangeRef = useRef(onStatusChange);
   useEffect(() => {
@@ -113,10 +115,12 @@ export function Explorer({ hostAlias, active, onStatusChange }: ExplorerProps) {
   }, []);
 
   useEffect(() => {
+    if (!token) return;
+
     let cancelled = false;
     onStatusChangeRef.current("connecting");
 
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
 
     ws.addEventListener("open", () => {
@@ -245,7 +249,7 @@ export function Explorer({ hostAlias, active, onStatusChange }: ExplorerProps) {
       ws.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hostAlias]);
+  }, [hostAlias, token]);
 
   function toRemotePanelEntries(entries: SftpEntry[]): PanelEntry[] {
     return entries.map((e) => ({ name: e.name, type: e.type, size: e.size, mtime: e.mtime }));

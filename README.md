@@ -49,6 +49,20 @@ pnpm start
 
 Le navigateur communique avec Next.js en HTTP pour la gestion de la config/des hosts, et directement avec le `ws-server` en WebSocket pour la session de terminal elle-même (URL configurable via `NEXT_PUBLIC_WS_URL`, `ws://localhost:4101` par défaut).
 
+## Authentification
+
+Un compte administrateur unique protège l'application :
+
+1. Créer le compte admin (une seule fois, ou pour changer le mot de passe) :
+   ```bash
+   pnpm run create-admin
+   ```
+   Demande un identifiant et un mot de passe (haché avec bcrypt), stockés dans `data/app.db` (SQLite).
+2. Se connecter via `/login`. Une session (cookie httpOnly, `data/app.db`, expiration 7 jours) protège :
+   - la page principale (`/`)
+   - toutes les routes API sous `/api/ssh/*`
+   - le `ws-server` (WebSocket `/shell` et `/sftp`), via un token de session transmis en query param, récupéré auprès de `/api/auth/ws-token`
+
 ## Sécurité
 
-Cette application est conçue pour un usage **strictement local, mono-utilisateur**. Elle peut lire n'importe quel fichier de `~/.ssh/` (y compris les clés privées) et exécuter des commandes locales (`wt.exe ssh <host>`). Aucune route API n'est protégée par authentification — ne pas exposer cette application sur un réseau partagé ou public.
+Cette application reste conçue pour un usage local/LAN, mono-utilisateur (un seul compte admin). Le cookie de session n'est pas marqué `Secure` (l'appli tourne en HTTP sur réseau local par défaut) — ne pas exposer sur un réseau non fiable sans mettre en place HTTPS. La base `data/app.db` contient le hash du mot de passe admin et les sessions actives : à protéger comme un secret (exclue de git via `.gitignore`). Elle peut lire n'importe quel fichier de `~/.ssh/` (y compris les clés privées) et exécuter des commandes locales (`wt.exe ssh <host>`), désormais uniquement accessible une fois authentifié.

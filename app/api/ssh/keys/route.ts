@@ -2,6 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/session";
 
 function sshDir(): string {
   return path.join(os.homedir(), ".ssh");
@@ -12,6 +13,9 @@ interface KeyEntry {
 }
 
 export async function GET() {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const dir = sshDir();
   if (!fs.existsSync(dir)) {
     return NextResponse.json({ entries: [] });

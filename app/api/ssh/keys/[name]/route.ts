@@ -2,6 +2,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/session";
 
 function sshDir(): string {
   return path.join(os.homedir(), ".ssh");
@@ -11,6 +12,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const { name } = await params;
 
   if (name.includes("/") || name.includes("\\") || name.includes("..")) {

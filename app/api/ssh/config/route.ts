@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { readConfigFile, writeConfigFile } from "@/lib/ssh-config";
+import { requireApiSession } from "@/lib/session";
 
 export async function GET() {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
   return NextResponse.json({ content: readConfigFile() });
 }
 
 export async function PUT(request: Request) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const body = await request.json();
   if (typeof body.content !== "string") {
     return NextResponse.json(

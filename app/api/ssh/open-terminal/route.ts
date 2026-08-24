@@ -1,8 +1,12 @@
 import { spawn } from "child_process";
 import { NextResponse } from "next/server";
 import { resolveHost } from "@/lib/ssh-config";
+import { requireApiSession } from "@/lib/session";
 
 export async function POST(request: Request) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
   const body = await request.json();
   const alias = body.host;
 

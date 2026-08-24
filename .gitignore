@@ -7,6 +7,12 @@ CLAUDE.md
 .env.local
 .env*.local
 
+# base de donnees locale (comptes/sessions)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
 package-lock.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
