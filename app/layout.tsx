@@ -29,11 +29,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var stored = localStorage.getItem("ssh-web-manager:theme");
-                var theme = stored === "light" || stored === "dark"
-                  ? stored
-                  : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-                if (theme === "dark") document.documentElement.classList.add("dark");
+                var media = window.matchMedia("(prefers-color-scheme: dark)");
+                var apply = function (matches) {
+                  document.documentElement.classList.toggle("dark", matches);
+                };
+                apply(media.matches);
+                media.addEventListener("change", function (e) { apply(e.matches); });
               } catch (e) {}
             `,
           }}

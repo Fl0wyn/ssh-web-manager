@@ -18,8 +18,16 @@ export interface LocalFsEntry {
 
 export type TransferDirection = "upload" | "download";
 
+export interface SftpPasswordCredentials {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+}
+
 export type SftpClientMessage =
   | { type: "connect"; host: string }
+  | { type: "connect"; credentials: SftpPasswordCredentials }
   | { type: "list"; requestId: string; path: string }
   | { type: "local-list"; requestId: string; path: string }
   | {

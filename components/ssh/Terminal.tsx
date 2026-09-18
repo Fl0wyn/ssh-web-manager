@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { useWsToken } from "@/lib/use-ws-token";
 import type { ClientMessage, ServerMessage } from "@/types/ssh";
 import "@xterm/xterm/css/xterm.css";
 
@@ -18,7 +17,6 @@ interface TerminalProps {
 const WS_URL = `${process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4101"}/shell`;
 
 export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
-  const { token } = useWsToken();
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -31,7 +29,7 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !token) return;
+    if (!container) return;
 
     const term = new XTerm({
       cursorBlink: true,
@@ -59,7 +57,7 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
 
     onStatusChangeRef.current("connecting");
 
-    const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`);
+    const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     function sendMessage(message: ClientMessage) {
@@ -158,7 +156,7 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
       ws.close();
       term.dispose();
     };
-  }, [hostAlias, token]);
+  }, [hostAlias]);
 
   useEffect(() => {
     if (!active) return;

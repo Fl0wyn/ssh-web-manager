@@ -24,7 +24,8 @@ export function attachSftpBridge(ws: WebSocket) {
     switch (message.type) {
       case "connect": {
         if (session) return;
-        session = createSftpSession(message.host, {
+        const target = "credentials" in message ? message.credentials : message.host;
+        session = createSftpSession(target, {
           onReady: (homePath) =>
             send(ws, { type: "ready", homePath, localHomePath: defaultLocalHome() }),
           onKeyboardInteractive: (name, instructions, prompts) =>

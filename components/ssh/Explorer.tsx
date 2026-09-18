@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExplorerPanel, type PanelEntry } from "@/components/ssh/ExplorerPanel";
 import { TransferQueue, type TransferItem } from "@/components/ssh/TransferQueue";
-import { useWsToken } from "@/lib/use-ws-token";
 import type {
   LocalFsEntry,
   SftpClientMessage,
   SftpEntry,
+  SftpPasswordCredentials,
   SftpServerMessage,
   TransferDirection,
 } from "@/types/sftp";
@@ -16,6 +16,7 @@ export type ExplorerStatus = "connecting" | "connected" | "disconnected" | "erro
 
 interface ExplorerProps {
   hostAlias: string;
+  credentials?: SftpPasswordCredentials;
   active: boolean;
   onStatusChange: (status: ExplorerStatus, errorMessage?: string) => void;
 }
@@ -43,8 +44,7 @@ function isRoot(currentPath: string): boolean {
   return currentPath === "/" || /^[A-Za-z]:\\?$/.test(currentPath);
 }
 
-export function Explorer({ hostAlias, active, onStatusChange }: ExplorerProps) {
-  const { token } = useWsToken();
+export function Explorer({ hostAlias, credentials, active, onStatusChange }: ExplorerProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const onStatusChangeRef = useRef(onStatusChange);
   useEffect(() => {
@@ -115,16 +115,18 @@ export function Explorer({ hostAlias, active, onStatusChange }: ExplorerProps) {
   }, []);
 
   useEffect(() => {
-    if (!token) return;
-
     let cancelled = false;
     onStatusChangeRef.current("connecting");
 
-    const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`);
+    const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.addEventListener("open", () => {
-      sendMessage({ type: "connect", host: hostAlias });
+      if (credentials) {
+        sendMessage({ type: "connect", credentials });
+      } else {
+        sendMessage({ type: "connect", host: hostAlias });
+      }
     });
 
     ws.addEventListener("error", () => {
@@ -249,7 +251,7 @@ export function Explorer({ hostAlias, active, onStatusChange }: ExplorerProps) {
       ws.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hostAlias, token]);
+  }, [hostAlias, credentials]);
 
   function toRemotePanelEntries(entries: SftpEntry[]): PanelEntry[] {
     return entries.map((e) => ({ name: e.name, type: e.type, size: e.size, mtime: e.mtime }));

@@ -2,9 +2,9 @@ import fs from "fs";
 import path from "path";
 import { Client } from "ssh2";
 import type { SFTPWrapper } from "ssh2";
-import { connectAuthenticated } from "@/lib/ssh-auth";
+import { connectAuthenticated, connectWithPassword } from "@/lib/ssh-auth";
 import type { KeyboardInteractivePrompt } from "@/types/ssh";
-import type { SftpEntry } from "@/types/sftp";
+import type { SftpEntry, SftpPasswordCredentials } from "@/types/sftp";
 
 export interface SftpSessionCallbacks {
   onReady: (homePath: string) => void;
@@ -56,7 +56,7 @@ function permissionsFromMode(mode: number): string {
 }
 
 export function createSftpSession(
-  alias: string,
+  target: string | SftpPasswordCredentials,
   callbacks: SftpSessionCallbacks
 ): SftpSession {
   const conn = new Client();
@@ -71,10 +71,16 @@ export function createSftpSession(
     close: () => {},
   };
 
-  const auth = connectAuthenticated(conn, alias, {
-    onKeyboardInteractive: callbacks.onKeyboardInteractive,
-    onError: callbacks.onError,
-  });
+  const auth =
+    typeof target === "string"
+      ? connectAuthenticated(conn, target, {
+          onKeyboardInteractive: callbacks.onKeyboardInteractive,
+          onError: callbacks.onError,
+        })
+      : connectWithPassword(conn, target, {
+          onKeyboardInteractive: callbacks.onKeyboardInteractive,
+          onError: callbacks.onError,
+        });
   if (!auth) return noop;
 
   conn.on("ready", () => {

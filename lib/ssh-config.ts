@@ -4,7 +4,7 @@ import path from "path";
 import SSHConfig, { type Directive, type Line } from "ssh-config";
 import type { HostEntry, ResolvedHost } from "@/types/ssh";
 
-const EXCLUDED_HOSTS = new Set(["github"]);
+const EXCLUDED_HOSTS = new Set(["github", "github.com"]);
 
 function sshConfigPath(): string {
   return path.join(os.homedir(), ".ssh", "config");

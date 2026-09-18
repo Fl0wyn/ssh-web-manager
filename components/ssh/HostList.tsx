@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, type MouseEvent } from "react";
-import { cn } from "@/lib/utils";
 import { useFavorites } from "@/lib/use-favorites";
 import { HostContextMenu } from "@/components/ssh/HostContextMenu";
 import { HostDetailsPopover } from "@/components/ssh/HostDetailsPopover";
@@ -11,7 +10,7 @@ export type HostListMode = "terminal" | "explorer";
 
 interface HostListProps {
   hosts: HostEntry[];
-  query: string;
+  mode: HostListMode;
   onOpenSession: (hostAlias: string) => void;
   onOpenExternalSession?: (hostAlias: string) => void;
   onOpenExplorer: (hostAlias: string) => void;
@@ -19,12 +18,11 @@ interface HostListProps {
 
 export function HostList({
   hosts,
-  query,
+  mode,
   onOpenSession,
   onOpenExternalSession,
   onOpenExplorer,
 }: HostListProps) {
-  const [mode, setMode] = useState<HostListMode>("terminal");
   const { isFavorite, toggleFavorite } = useFavorites();
   const [contextMenu, setContextMenu] = useState<{
     hostAlias: string;
@@ -60,48 +58,15 @@ export function HostList({
   }
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const base = q
-      ? hosts.filter(
-          (h) =>
-            h.name.toLowerCase().includes(q) ||
-            h.description.toLowerCase().includes(q)
-        )
-      : hosts;
-
-    return [...base].sort((a, b) => {
+    return [...hosts].sort((a, b) => {
       const favA = isFavorite(a.name) ? 0 : 1;
       const favB = isFavorite(b.name) ? 0 : 1;
       return favA - favB;
     });
-  }, [hosts, query, isFavorite]);
+  }, [hosts, isFavorite]);
 
   return (
     <div className="flex min-h-0 flex-col gap-2 border-r bg-card p-2">
-      <div className="flex shrink-0 gap-1 rounded-md bg-muted p-1">
-        <button
-          onClick={() => setMode("terminal")}
-          className={cn(
-            "flex-1 rounded-sm px-2 py-1 text-xs font-medium transition-colors",
-            mode === "terminal"
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Shell
-        </button>
-        <button
-          onClick={() => setMode("explorer")}
-          className={cn(
-            "flex-1 rounded-sm px-2 py-1 text-xs font-medium transition-colors",
-            mode === "explorer"
-              ? "bg-background text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Explorer
-        </button>
-      </div>
       <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-px">
           {filtered.map((host, index) => {

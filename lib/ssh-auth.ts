@@ -20,6 +20,40 @@ export interface SshAuthHandle {
   respondPrompt: (responses: string[]) => void;
 }
 
+export interface PasswordCredentials {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+}
+
+/**
+ * Authentifie une Client ssh2 par mot de passe direct (pas de ~/.ssh/config
+ * ni de cle privee) - utilise pour les connexions SFTP ponctuelles/enregistrees.
+ */
+export function connectWithPassword(
+  conn: Client,
+  credentials: PasswordCredentials,
+  callbacks: SshAuthCallbacks
+): SshAuthHandle {
+  conn.on("keyboard-interactive", (name, instructions, _lang, prompts, finish) => {
+    finish(prompts.map(() => credentials.password));
+  });
+
+  conn.connect({
+    host: credentials.host,
+    port: credentials.port,
+    username: credentials.user,
+    password: credentials.password,
+    readyTimeout: CONNECT_TIMEOUT_MS,
+    tryKeyboard: true,
+  });
+
+  return {
+    respondPrompt: () => {},
+  };
+}
+
 /**
  * Résout l'alias, authentifie une Client ssh2 par clé privée (avec retry de
  * passphrase via keyboard-interactive), et connecte. `conn` émettra ses

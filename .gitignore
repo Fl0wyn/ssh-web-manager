@@ -7,12 +7,12 @@ CLAUDE.md
 .env.local
 .env*.local
 
-# base de donnees locale (comptes/sessions)
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
+# connexions SFTP enregistrees (contient des mots de passe en clair)
+data/sftp.json
 
 package-lock.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# lanceur .exe compile (genere via launcher/build.ps1)
+/SSH-Web-Manager.exe
