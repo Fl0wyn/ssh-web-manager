@@ -15,6 +15,9 @@ interface TerminalProps {
 }
 
 const WS_URL = `${process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4101"}/shell`;
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 32;
+const DEFAULT_FONT_SIZE = 14;
 
 export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +37,7 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
     const term = new XTerm({
       cursorBlink: true,
       convertEol: true,
-      fontSize: 14,
+      fontSize: DEFAULT_FONT_SIZE,
       theme: { background: "#0a0a0a" },
     });
     const fitAddon = new FitAddon();
@@ -52,6 +55,41 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
         fitAddon.fit();
       }
     });
+
+    function applyFontSize(next: number) {
+      const clamped = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, next));
+      term.options.fontSize = clamped;
+      if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+        fitAddon.fit();
+      }
+    }
+
+    function onWheelZoom(e: WheelEvent) {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      applyFontSize(term.options.fontSize! - Math.sign(e.deltaY));
+    }
+
+    function onKeyDownZoom(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key === "=" || e.key === "+") {
+        e.preventDefault();
+        e.stopPropagation();
+        applyFontSize(term.options.fontSize! + 1);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        e.stopPropagation();
+        applyFontSize(term.options.fontSize! - 1);
+      } else if (e.key === "0") {
+        e.preventDefault();
+        e.stopPropagation();
+        applyFontSize(DEFAULT_FONT_SIZE);
+      }
+    }
+
+    container.addEventListener("wheel", onWheelZoom, { passive: false });
+    container.addEventListener("keydown", onKeyDownZoom, { capture: true });
     let hadFatalError = false;
     let lastErrorMessage: string | undefined;
 
@@ -151,6 +189,8 @@ export function Terminal({ hostAlias, active, onStatusChange }: TerminalProps) {
     return () => {
       cancelled = true;
       cancelAnimationFrame(rafId);
+      container.removeEventListener("wheel", onWheelZoom);
+      container.removeEventListener("keydown", onKeyDownZoom, { capture: true });
       resizeObserver.disconnect();
       onData.dispose();
       ws.close();

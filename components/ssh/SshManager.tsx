@@ -7,6 +7,7 @@ import { ConfigEditorDialog } from "@/components/ssh/ConfigEditorDialog";
 import { KeysExplorerDialog } from "@/components/ssh/KeysExplorerDialog";
 import { HistoryDialog } from "@/components/ssh/HistoryDialog";
 import { SftpConnectDialog } from "@/components/ssh/SftpConnectDialog";
+import { ZoomGuard } from "@/components/ssh/ZoomGuard";
 import { Button } from "@/components/ui/button";
 import { useHistory } from "@/lib/use-history";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ export function SshManager({ hosts: initialHosts }: SshManagerProps) {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
+      <ZoomGuard />
       <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b bg-card px-4">
         <div className="flex shrink-0 gap-1 rounded-md bg-muted p-1">
           <button
